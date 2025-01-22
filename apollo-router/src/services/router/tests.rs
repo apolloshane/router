@@ -17,6 +17,7 @@ use tower_service::Service;
 use crate::context::OPERATION_KIND;
 use crate::context::OPERATION_NAME;
 use crate::graphql;
+use crate::json_ext::Path;
 use crate::metrics::FutureMetricsExt;
 use crate::plugins::telemetry::CLIENT_NAME;
 use crate::plugins::telemetry::CLIENT_VERSION;
@@ -630,10 +631,14 @@ async fn it_stores_operation_error_when_config_is_enabled() {
                         graphql::Error::builder()
                             .message("some error")
                             .extension_code("SOME_ERROR_CODE")
+                            .extension("service", "mySubgraph")
+                            .path(Path::from("obj/field"))
                             .build(),
                         graphql::Error::builder()
                             .message("some other error")
                             .extension_code("SOME_OTHER_ERROR_CODE")
+                            .extension("service", "myOtherSubgraph")
+                            .path(Path::from("obj/arr/@/firstElementField"))
                             .build(),
                     ])
                     .build();
@@ -679,6 +684,8 @@ async fn it_stores_operation_error_when_config_is_enabled() {
                 KeyValue::new("apollo.client.name", client_name),
                 KeyValue::new("apollo.client.version", client_version),
                 KeyValue::new("graphql.error.extensions.code", "SOME_ERROR_CODE"),
+                KeyValue::new("graphql.error.path", "/obj/field"),
+                KeyValue::new("apollo.router.error.source", "mySubgraph"),
             ]
         );
         assert_counter!(
@@ -691,6 +698,8 @@ async fn it_stores_operation_error_when_config_is_enabled() {
                 KeyValue::new("apollo.client.name", client_name),
                 KeyValue::new("apollo.client.version", client_version),
                 KeyValue::new("graphql.error.extensions.code", "SOME_OTHER_ERROR_CODE"),
+                KeyValue::new("graphql.error.path", "/obj/arr/@/firstElementField"),
+                KeyValue::new("apollo.router.error.source", "myOtherSubgraph"),
             ]
         );
     }
